@@ -1,1 +1,18 @@
 /* You can add global styles to this file, and also import other style files */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+ul {
+  padding-left: 0;
+}
+
+li {
+  list-style: none;
+  display: inline-block;
+}
+
+li:not(:last-child) {
+  margin-right: 1rem;
+}
