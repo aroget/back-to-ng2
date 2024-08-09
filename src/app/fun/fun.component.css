@@ -12,12 +12,9 @@ ul {
 
 .card {
   overflow: hidden;
+  margin-bottom: 15px;
   border-radius: 20px 20px 0 0;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.card {
-  margin-bottom: 15px;
 }
 
 .card__details {

@@ -1,69 +1,87 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { map, Observable, startWith, combineLatest } from 'rxjs';
+import {
+  map,
+  Observable,
+  startWith,
+  combineLatest,
+  switchMap,
+  debounceTime,
+  distinctUntilChanged,
+} from 'rxjs';
+import { FunService, Item } from './fun.service';
 
-const NUMBER_OF_ITEMS = 500;
-const ITEMS = Array.from(Array(NUMBER_OF_ITEMS).keys());
-
-const createStockItem = (index: number) => ({
-  id: index + 1,
-  price: Math.round(Math.random() * 1000),
-  name: `Item ${index + 1}`,
-  available: Math.random() > 0.5,
-  description: `Description ${index + 1}`,
-  image: `https://picsum.photos/200/300?random=${index + 1}`,
-});
-
-type Item = {
-  id: number;
-  price: number;
-  name: string;
-  available: boolean;
-  description: string;
-  image: string;
-};
-
-const sampleItems: Item[] = ITEMS.map(createStockItem);
+type InputValue<T> = T | null;
 
 @Component({
   selector: 'app-fun',
   standalone: true,
+  providers: [FunService],
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './fun.component.html',
   styleUrl: './fun.component.css',
 })
 export class FunComponent {
-  range = new FormControl();
   min = new FormControl(0);
+  name = new FormControl('');
   max = new FormControl(1000);
   availability = new FormControl('all');
 
   items$: Observable<Item[]>;
+  loading$: Observable<boolean>;
+  filters$: Observable<
+    [
+      InputValue<number>,
+      InputValue<number>,
+      InputValue<string>,
+      InputValue<string>
+    ]
+  >;
+  ui$: Observable<{
+    loading: boolean;
+    items: Item[];
+    filters: Array<InputValue<number> | InputValue<string>>;
+  }>;
 
-  constructor() {
-    this.items$ = combineLatest([
+  constructor(private readonly service: FunService) {
+    this.filters$ = combineLatest([
       this.min.valueChanges.pipe(startWith(this.min.value)),
       this.max.valueChanges.pipe(startWith(this.max.value)),
       this.availability.valueChanges.pipe(startWith(this.availability.value)),
-    ]).pipe(
-      map(([min, max, availability]) => {
-        return sampleItems.filter((i) => {
-          if (min === null || max === null || !availability === null)
-            return true;
+      this.name.valueChanges.pipe(
+        debounceTime(300),
+        startWith(this.name.value),
+        distinctUntilChanged()
+      ),
+    ]);
 
-          return (
-            i.price >= min &&
-            i.price <= max &&
-            (availability === 'all'
-              ? true
-              : availability === 'in-stock'
-              ? i.available
-              : !i.available)
-          );
-        });
-      }),
-      startWith(sampleItems)
+    this.items$ = this.filters$.pipe(
+      switchMap(([min, max, availability, name]) =>
+        this.service.getItems({ min, max, availability, name })
+      )
+    );
+
+    this.loading$ = this.filters$.pipe(
+      switchMap(() =>
+        this.items$.pipe(
+          map(() => false),
+          startWith(true)
+        )
+      )
+    );
+
+    this.ui$ = combineLatest([this.loading$, this.items$, this.filters$]).pipe(
+      map(([loading, items, filters]) => ({
+        loading,
+        items,
+        filters,
+      })),
+      startWith({
+        loading: true,
+        items: [],
+        filters: [0, 1000, 'all', ''],
+      })
     );
   }
 }

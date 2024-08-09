@@ -1,33 +1,39 @@
-<div class="filters">
-  <div class="filters__price">
-    <label>Price</label>
-    <input type="number" [formControl]="min" />
-    <input type="number" [formControl]="max" />
+<div *ngIf="ui$ | async as ui">
+  <div class="filters">
+    <div class="filters__name">
+      <label for="name">Name</label>
+      <input type="text" [formControl]="name" />
+    </div>
+    <div class="filters__price">
+      <label>Price</label>
+      <input type="number" [formControl]="min" />
+      <input type="number" [formControl]="max" />
+    </div>
+    <div class="filters__availability">
+      <label>Availability</label>
+      <select name="stock" [formControl]="availability">
+        <option value="all">All</option>
+        <option value="in-stock">In Stock</option>
+        <option value="out-of-stock">Out of Stock</option>
+      </select>
+    </div>
   </div>
-  <div class="filters__availability">
-    <label>Availability</label>
-    <select name="stock" [formControl]="availability">
-      <option value="all">All</option>
-      <option value="in-stock">In Stock</option>
-      <option value="out-of-stock">Out of Stock</option>
-    </select>
-  </div>
-</div>
 
-<div *ngIf="items$ | async as items; else loading">
-  <div *ngIf="items.length > 0; else noItems">
-    <ul>
-      <li *ngFor="let item of items">
-        <div class="card">
-          <img [src]="item.image" alt="tem.name" />
-          <div class="card__details">
-            <h3>{{ item.name }}</h3>
-            <p>{{ item.price | currency }}</p>
-            <p>{{ item.available ? "In Stock" : "Out of Stock" }}</p>
+  <div *ngIf="!ui.loading; else loading">
+    <div *ngIf="ui.items.length > 0; else noItems">
+      <ul>
+        <li *ngFor="let item of ui.items">
+          <div class="card">
+            <img [src]="item.image" alt="tem.name" />
+            <div class="card__details">
+              <h3>{{ item.name }}</h3>
+              <p>{{ item.price | currency }}</p>
+              <p>{{ item.available ? "In Stock" : "Out of Stock" }}</p>
+            </div>
           </div>
-        </div>
-      </li>
-    </ul>
+        </li>
+      </ul>
+    </div>
   </div>
 </div>
 
