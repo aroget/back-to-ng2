@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { map, Observable, startWith, merge, withLatestFrom } from 'rxjs';
+import { map, Observable, startWith, combineLatest } from 'rxjs';
 
 const NUMBER_OF_ITEMS = 500;
 const ITEMS = Array.from(Array(NUMBER_OF_ITEMS).keys());
@@ -24,7 +24,7 @@ type Item = {
   image: string;
 };
 
-const sampleItems = ITEMS.map(createStockItem);
+const sampleItems: Item[] = ITEMS.map(createStockItem);
 
 @Component({
   selector: 'app-fun',
@@ -40,37 +40,21 @@ export class FunComponent {
   availability = new FormControl('all');
 
   items$: Observable<Item[]>;
-  price$ = merge(this.min.valueChanges, this.max.valueChanges).pipe(
-    withLatestFrom(
-      this.min.valueChanges.pipe(startWith(this.min.value)),
-      this.max.valueChanges.pipe(startWith(this.max.value))
-    ),
-    map(([_, min, max]) => ({ min, max })),
-    startWith({ min: this.min.value, max: this.max.value })
-  );
-
-  filters$ = merge(this.price$, this.availability.valueChanges).pipe(
-    withLatestFrom(
-      this.price$,
-      this.availability.valueChanges.pipe(startWith(this.availability.value))
-    ),
-    map(([_, price, availability]) => ({ price, availability }))
-  );
 
   constructor() {
-    this.items$ = this.filters$.pipe(
-      map(({ price, availability }) => {
+    this.items$ = combineLatest([
+      this.min.valueChanges.pipe(startWith(this.min.value)),
+      this.max.valueChanges.pipe(startWith(this.max.value)),
+      this.availability.valueChanges.pipe(startWith(this.availability.value)),
+    ]).pipe(
+      map(([min, max, availability]) => {
         return sampleItems.filter((i) => {
-          if (
-            price.min === null ||
-            price.max === null ||
-            !availability === null
-          )
+          if (min === null || max === null || !availability === null)
             return true;
 
           return (
-            i.price >= price.min &&
-            i.price <= price.max &&
+            i.price >= min &&
+            i.price <= max &&
             (availability === 'all'
               ? true
               : availability === 'in-stock'
